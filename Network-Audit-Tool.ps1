@@ -1,86 +1,117 @@
 # Funções
-function Show-IP {
-  ipconfig
-  Write-Host""
-  Pause
-  Clear-Host
+function Show-Section {
+  param([string]$Title)
 
+    Write-Host ""
+    Write-Host "=========================================" -ForegroundColor Cyan
+    Write-Host "          $Title" -ForegroundColor Cyan
+    Write-Host "=========================================" -ForegroundColor Cyan
+
+}
+
+  function Show-Status {
+    param(
+        [string]$Message,
+        [string]$Type = "INFO"
+    )
+
+    if ($Type -eq "OK") {
+        Write-Host "[OK] $Message" -ForegroundColor Green
+    }
+    elseif ($Type -eq "WARNING") {
+        Write-Host "[WARNING] $Message" -ForegroundColor Yellow
+    }
+    elseif ($Type -eq "ERROR") {
+        Write-Host "[ERROR] $Message" -ForegroundColor Red
+    }
+    else {
+        Write-Host "[*] $Message" -ForegroundColor Gray
+    }
+}
+
+function Wait-Return {
+    Write-Host ""
+    Pause
+}
+
+function Show-IP {
+    Show-Section "IP LOCAL"
+    Show-Status "Coletando informacoes de Rede..." "INFO"
+    ipconfig
+    Show-Status "Consulta finalizada" "OK"
+    Wait-Return
 }
 
 function Test-ConnectionTarget {
-  $target = Read-Host "Digite o IP ou Dominio"
-  ping $target
-  Write-Host""
-  Pause
-  Clear-Host
+    Show-Section "TESTE DE CONECTIVIDADE"
+    $target = Read-Host "Digite o IP ou dominio"
+    Show-Status "Testando conexao com $target..." "INFO"
+    ping $target
+    Show-Status "Teste finalizado" "OK"
+    Wait-Return
 }
 
 function Show-Ports {
-  netstat -an
-  Write-Host""
-  Pause
-  Clear-Host
+    Show-Section "PORTAS ABERTAS"
+    Show-Status "Coletando portas em escuta..." "INFO"
+    netstat -an | findstr LISTENING
+    Show-Status "Verificacao concluida" "OK"
+    Wait-Return
 }
 
 function Active-Connections {
+  Show-Section "CONEXÕES ATIVAS"
+  Show-Status "Verificando conexoes TCP ativas." "INFO"
   Get-NetTCPConnection
-  Write-Host""
-  Pause
-  Clear-Host
+  Show-Status "Verificacao concluida" "OK"
+  Wait-Return
 }
 
 function Scan-NetworkHosts {
-
+    Show-Section "SCANNER DE HOSTS"
     $base = Read-Host "Digite a rede base (Ex: 192.168.0)"
-
-    Write-Host ""
-    Write-Host "Escaneando hosts da rede..." -ForegroundColor Yellow
-    Write-Host ""
-
+    Show-Status "Escaneando hosts da rede..." "WARNING"
+    Start-Sleep -Milliseconds 700
     for ($i = 1; $i -le 20; $i++) {
-
-        $ip = "$base.$i";
-
+        $ip = "$base.$i"
         if (Test-Connection -ComputerName $ip -Count 1 -Quiet) {
-
             Write-Host "[ONLINE]  $ip" -ForegroundColor Green
         }
-
         else {
-
             Write-Host "[OFFLINE] $ip" -ForegroundColor DarkGray
         }
     }
-
-    Write-Host ""
-    Pause
-    Clear-Host
+    Show-Status "Escaneamento finalizado" "OK"
+    Wait-Return
 }
 
 function Info-DNS { 
+  Show-Section "CONSULTA DNS"
   $domain = Read-Host "Digite o dominio. Ex: google.com"
+  Show-Status "Consultando DNS para $domain..." "INFO"
   nslookup $domain
-  Write-Host""
-  Pause
-  Clear-Host
+  Show-Status "Consulta DNS finalizada" "OK"
+  Wait-Return
 }
 
-function Auditoria-Completa {
-    Write-Host "Executando auditoria completa..." -ForegroundColor Yellow
+    function Auditoria-Completa {
+        Show-Section "AUDITORIA COMPLETA"
 
-    Write-Host "`n[IP LOCAL]" -ForegroundColor Cyan
-    ipconfig
+        Show-Section "IP LOCAL"
+        Show-Status "Coletando informacoes de IP local..." "INFO"
+        ipconfig
 
-    Write-Host "`n[PORTAS / CONEXOES]" -ForegroundColor Cyan
-    netstat -an
+        Show-Section "PORTAS E CONEXOES"
+        Show-Status "Coletando portas e conexoes..." "INFO"
+        netstat -an
 
-    Write-Host "`n[DNS]" -ForegroundColor Cyan
-    $domain = Read-Host "Digite um dominio para consulta DNS"
-    nslookup $domain
-  Write-Host""
-  Pause    
-  Clear-Host
-} 
+        Show-Section "CONSULTA DNS"
+        $domain = Read-Host "Digite um dominio para consulta DNS"
+        nslookup $domain
+
+        Show-Status "Auditoria completa finalizada" "OK"
+        Wait-Return
+  } 
 
 function Export-AuditReport {
 
