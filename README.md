@@ -77,3 +77,13 @@ Ferramenta desenvolvida exclusivamente para fins educacionais e estudos relacion
 ![MENU](screenshots/main-menu.png)
 ![HOST SCAN](screenshots/host-scan.png)
 ![PING TEST](screenshots/ping-test.png)
+
+--
+
+## Recursos
+
+- Auditoria de rede
+- Scanner de hosts
+- Consulta DNS
+- Exportacao de relatorio TXT
+- Diagnostico de conectividade

@@ -65,7 +65,7 @@ function Info-DNS {
   Clear-Host
 }
 
-function Auditoria-Completa{
+function Auditoria-Completa {
     Write-Host "Executando auditoria completa..." -ForegroundColor Yellow
 
     Write-Host "`n[IP LOCAL]" -ForegroundColor Cyan
@@ -82,6 +82,44 @@ function Auditoria-Completa{
   Clear-Host
 } 
 
+function Export-AuditReport {
+
+    $folder = "$PSScriptRoot\reports"
+
+    if (!(Test-Path $folder)) {
+        New-Item -ItemType Directory -Path $folder | Out-Null
+    }
+
+    $file = "$folder\network-audit-report.txt"
+
+    Write-Host ""
+    Write-Host "[*] Gerando relatorio..." -ForegroundColor Yellow
+
+    $content = @()
+
+    $content += "NETWORK AUDIT TOOL - RELATORIO"
+    $content += "Gerado em: $(Get-Date)"
+    $content += ""
+
+    $content += "[IP LOCAL]"
+    $content += ipconfig
+
+    $content += ""
+    $content += "[PORTAS ABERTAS]"
+    $content += netstat -an
+
+    $content += ""
+    $content += "[CONEXOES ATIVAS]"
+    $content += Get-NetTCPConnection
+
+    $content | Out-File -FilePath $file -Encoding utf8
+
+    Write-Host "[OK] Relatorio gerado com sucesso!" -ForegroundColor Green
+    Write-Host "Local: $file" -ForegroundColor Cyan
+
+    Pause
+}
+
 function Show-Banner {
 
     Clear-Host
@@ -95,62 +133,40 @@ function Show-Banner {
     Write-Host ""
 }
 
-do {
-
-Show-Banner
-
-Write-Host "[1] Mostrar IP Local" -ForegroundColor Green
-Write-Host "[2] Testar Conexao (Ping)" -ForegroundColor Green
-Write-Host "[3] Ver portas abertas" -ForegroundColor Green
-Write-Host "[4] Ver conexoes ativas" -ForegroundColor Green
-Write-Host "[5] Scanner de hosts da rede" -ForegroundColor Green
-Write-Host "[6] Informacoes DNS" -ForegroundColor Green
-Write-Host "[7] Auditoria completa" -ForegroundColor Green
-Write-Host ""
-Write-Host "[0] Sair" -ForegroundColor Red
-Write-Host ""
-$opcao = Read-Host "Escolha uma Opcao"
-
-
-
-
-switch ($opcao){
-  1 {
-      Show-IP
-  }
-
-  2 {
-      Test-ConnectionTarget
-  }
-
-  3 { 
-      Show-Ports
-  }
-
-  4 {
-      Active-Connections
-  }
-
-  5 {
-      Scan-NetworkHosts
-  }
-
-  6 {
-      Info-DNS
-  }
-
-  7 {
-      Auditoria-Completa
-  }
-
-  0 {
+function Show-Menu {
+    Write-Host "[1] Mostrar IP local" -ForegroundColor White
+    Write-Host "[2] Testar conexao (Ping)" -ForegroundColor White
+    Write-Host "[3] Ver portas abertas" -ForegroundColor White
+    Write-Host "[4] Ver conexoes ativas" -ForegroundColor White
+    Write-Host "[5] Scanner de hosts" -ForegroundColor White
+    Write-Host "[6] Consulta DNS" -ForegroundColor White
+    Write-Host "[7] Auditoria completa" -ForegroundColor White
+    Write-Host "[8] Exportar auditoria para TXT" -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "Encerrando Ferramenta..." -ForegroundColor Yellow
-  }
-      default {
-            Write-Host ""
+    Write-Host "[0] Sair" -ForegroundColor Red
+    Write-Host ""
+}
+
+do {
+    Show-Banner
+    Show-Menu
+
+    $opcao = Read-Host "Escolha uma opcao"
+
+    switch ($opcao) {
+        1 { Show-IP }
+        2 { Test-ConnectionTarget }
+        3 { Show-Ports }
+        4 { Active-Connections }
+        5 { Scan-NetworkHosts }
+        6 { Info-DNS }
+        7 { Auditoria-Completa }
+        8 { Export-AuditReport }
+        0 { Write-Host "Encerrando..." -ForegroundColor Yellow }
+        default {
             Write-Host "[ERRO] Opcao invalida." -ForegroundColor Red
             Pause
+        }
     }
-}
+
 } while ($opcao -ne 0)
