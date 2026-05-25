@@ -151,6 +151,14 @@ function Export-AuditReport {
     Pause
 }
 
+function InfoTool {
+  Show-Section "INFO TOOL"
+  Show-Status "Carregando as informacoes da Tool"
+  Write-Host "Network Audit Tool v1.0"
+  Write-Host "Developed by rangelsys"
+  Wait-Return
+}
+
 function Show-Banner {
 
     Clear-Host
@@ -173,6 +181,7 @@ function Show-Menu {
     Write-Host "[6] Consulta DNS" -ForegroundColor White
     Write-Host "[7] Auditoria completa" -ForegroundColor White
     Write-Host "[8] Exportar auditoria para TXT" -ForegroundColor Yellow
+    Write-Host "[9] Sobre a Ferramenta" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "[0] Sair" -ForegroundColor Red
     Write-Host ""
@@ -193,6 +202,7 @@ do {
         6 { Info-DNS }
         7 { Auditoria-Completa }
         8 { Export-AuditReport }
+        9 { InfoTool }
         0 { Write-Host "Encerrando..." -ForegroundColor Yellow }
         default {
             Write-Host "[ERRO] Opcao invalida." -ForegroundColor Red
