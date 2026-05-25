@@ -44,6 +44,9 @@ TCP Connections
 [5] Scanner de hosts
 [6] Consulta DNS
 [7] Auditoria completa
+[8] Exportar auditoria para TXT
+[9] Sobre a ferramenta
+[10] Exportar relatorio HTML
 
 [0] Sair
 ```
@@ -87,3 +90,9 @@ Ferramenta desenvolvida exclusivamente para fins educacionais e estudos relacion
 - Consulta DNS
 - Exportacao de relatorio TXT
 - Diagnostico de conectividade
+
+--
+
+## Relatorio HTML
+
+![RELATORIO HTML](screenshots/html-report.png)

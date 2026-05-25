@@ -1,4 +1,17 @@
+$Host.UI.RawUI.WindowTitle = "Network Audit Tool v1.0"
+
 # Funções
+function Menu-Option {
+  param (
+    [string]$Number,
+    [string]$Text,
+    [string]$Color = "Cyan"
+  )
+
+  Write-Host "[$Number] " -NoNewLine -ForegroundColor $Color
+  Write-Host $Text -ForegroundColor White
+}
+
 function Show-Section {
   param([string]$Title)
 
@@ -75,10 +88,19 @@ function Scan-NetworkHosts {
     for ($i = 1; $i -le 20; $i++) {
         $ip = "$base.$i"
         if (Test-Connection -ComputerName $ip -Count 1 -Quiet) {
-            Write-Host "[ONLINE]  $ip" -ForegroundColor Green
+            try {
+              $hostname = [System.Net.Dns]::GetHostByAddress($ip).HostName 
+            }
+        catch {
+          $hostname = "Unknownn"
         }
-        else {
-            Write-Host "[OFFLINE] $ip" -ForegroundColor DarkGray
+        
+        Write-Host "[ONLINE] " -NoNewLine -ForegroundColor Green
+        Write-Host "$ip " -NoNewLine -ForegroundColor White
+        Write-Host "| $hostname" -ForegroundColor DarkGray
+        } else {
+        Write-Host "[OFFLINE] " -NoNewLine -ForegroundColor DarkGray
+        Write-Host "$ip" -ForegroundColor DarkGray
         }
     }
     Show-Status "Escaneamento finalizado" "OK"
@@ -147,8 +169,6 @@ function Export-AuditReport {
 
     Write-Host "[OK] Relatorio gerado com sucesso!" -ForegroundColor Green
     Write-Host "Local: $file" -ForegroundColor Cyan
-
-    Pause
 }
 
 function InfoTool {
@@ -157,6 +177,108 @@ function InfoTool {
   Write-Host "Network Audit Tool v1.0"
   Write-Host "Developed by rangelsys"
   Wait-Return
+}
+
+function Export-HtmlReport {
+
+    Show-Section "EXPORTAR RELATORIO HTML"
+
+    $folder = "$PSScriptRoot\reports"
+
+    if (!(Test-Path $folder)) {
+        New-Item -ItemType Directory -Path $folder | Out-Null
+    }
+
+    $file = "$folder\network-audit-report.html"
+
+    Show-Status "Gerando relatorio HTML..." "INFO"
+
+    $date = Get-Date
+    $computer = $env:COMPUTERNAME
+    $user = $env:USERNAME
+
+    $ipInfo = ipconfig | Out-String
+    $ports = netstat -an | findstr LISTENING | Out-String
+    $connections = Get-NetTCPConnection | Out-String
+
+    $html = @"
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Network Audit Report</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: Consolas, monospace;
+            margin: 40px;
+        }
+
+        h1 {
+            color: #58a6ff;
+        }
+
+        h2 {
+            color: #79c0ff;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 6px;
+        }
+
+        .info {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+
+        pre {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        .ok {
+            color: #3fb950;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Network Audit Report</h1>
+
+    <div class="info">
+        <p><strong>Computador:</strong> $computer</p>
+        <p><strong>Usuario:</strong> $user</p>
+        <p><strong>Data:</strong> $date</p>
+        <p class="ok"><strong>Status:</strong> Relatorio gerado com sucesso</p>
+    </div>
+
+    <h2>Informacoes de IP</h2>
+    <pre>$ipInfo</pre>
+
+    <h2>Portas Abertas</h2>
+    <pre>$ports</pre>
+
+    <h2>Conexoes TCP</h2>
+    <pre>$connections</pre>
+
+</body>
+</html>
+"@
+
+    $html | Out-File -FilePath $file -Encoding UTF8
+
+    Show-Status "Relatorio HTML gerado com sucesso" "OK"
+    Write-Host "Local: $file" -ForegroundColor Cyan
+
+    Start-Process $file
+
+    Wait-Return
 }
 
 function Show-Banner {
@@ -168,23 +290,30 @@ function Show-Banner {
     Write-Host "          NETWORK AUDIT TOOL             " -ForegroundColor Cyan
     Write-Host "=========================================" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "     Infrastructure | Security | Audit" -ForegroundColor DarkGray
+    Write-Host "   Infrastructure | Security | Audit" -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "-----------------------------------------" -ForegroundColor DarkGray
     Write-Host ""
 }
 
 function Show-Menu {
-    Write-Host "[1] Mostrar IP local" -ForegroundColor White
-    Write-Host "[2] Testar conexao (Ping)" -ForegroundColor White
-    Write-Host "[3] Ver portas abertas" -ForegroundColor White
-    Write-Host "[4] Ver conexoes ativas" -ForegroundColor White
-    Write-Host "[5] Scanner de hosts" -ForegroundColor White
-    Write-Host "[6] Consulta DNS" -ForegroundColor White
-    Write-Host "[7] Auditoria completa" -ForegroundColor White
-    Write-Host "[8] Exportar auditoria para TXT" -ForegroundColor Yellow
-    Write-Host "[9] Sobre a Ferramenta" -ForegroundColor Yellow
+    Menu-Option "1" "Mostrar IP Local"
+    Menu-Option "2" "Testar Conexao ( Ping )"
+    Menu-Option "3" "Ver portas abertas"
+    Menu-Option "4" "Ver conexoes ativas"
+    Menu-Option "5" "Scanner de Hosts"
+    Menu-Option "6" "Consulta DNS"
+    Menu-Option "7" "Auditoria Completa"
+
+    Menu-Option "8" "Exportar auditoria para TXT" "Yellow"
+    Menu-Option "9" "Sobre a Ferramenta" "Magenta"
+    Menu-Option "10" "Exportar relatorio HTML" "Magenta"
+
     Write-Host ""
-    Write-Host "[0] Sair" -ForegroundColor Red
+
+    Menu-Option "0" "Sair" "Red"
     Write-Host ""
+
 }
 
 do {
@@ -203,6 +332,7 @@ do {
         7 { Auditoria-Completa }
         8 { Export-AuditReport }
         9 { InfoTool }
+        10 {Export-HtmlReport}
         0 { Write-Host "Encerrando..." -ForegroundColor Yellow }
         default {
             Write-Host "[ERRO] Opcao invalida." -ForegroundColor Red
