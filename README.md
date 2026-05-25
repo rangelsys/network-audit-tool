@@ -35,6 +35,8 @@ TCP Connections
           NETWORK AUDIT TOOL
 =========================================
 
+   Infrastructure | Security | Audit            
+
 [1] Mostrar IP local
 [2] Testar conexão (Ping)
 [3] Ver portas abertas
