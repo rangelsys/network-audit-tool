@@ -1,6 +1,26 @@
 $Host.UI.RawUI.WindowTitle = "Network Audit Tool v1.0"
 
-# Funções
+# Funções 
+Function Show-Loading {
+  param(
+    [string]$Message = "Carregando",
+    [int]$Seconds = 2
+  )
+
+  Write-Host ""
+  Write-Host "[*] $Message" -NoNewLine -ForegroundColor Yellow
+
+  for ($i = 0; $i -lt $Seconds; $i++ ){
+    Start-Sleep -Milliseconds 500
+    Write-Host "." -NoNewLine -ForegroundColor Yellow
+    Start-Sleep -Milliseconds 500
+    Write-host "." -NoNewLine -ForegroundColor Yellow
+  }
+
+  Write-Host ""
+
+}
+
 function Menu-Option {
   param (
     [string]$Number,
@@ -49,8 +69,9 @@ function Wait-Return {
 
 function Show-IP {
     Show-Section "IP LOCAL"
-    Show-Status "Coletando informacoes de Rede..." "INFO"
+    Show-Loading "Coletando informacoes de Rede" 2
     ipconfig
+    Write-Host ""
     Show-Status "Consulta finalizada" "OK"
     Wait-Return
 }
@@ -58,51 +79,81 @@ function Show-IP {
 function Test-ConnectionTarget {
     Show-Section "TESTE DE CONECTIVIDADE"
     $target = Read-Host "Digite o IP ou dominio"
-    Show-Status "Testando conexao com $target..." "INFO"
+    Show-Loading "Testando conexao com $target" 2
     ping $target
+    Write-Host ""
     Show-Status "Teste finalizado" "OK"
     Wait-Return
 }
 
 function Show-Ports {
     Show-Section "PORTAS ABERTAS"
-    Show-Status "Coletando portas em escuta..." "INFO"
+    Show-Loading "Coletando portas em escuta" 2
     netstat -an | findstr LISTENING
+    Write-Host ""
     Show-Status "Verificacao concluida" "OK"
     Wait-Return
 }
 
 function Active-Connections {
   Show-Section "CONEXÕES ATIVAS"
-  Show-Status "Verificando conexoes TCP ativas." "INFO"
+  Show-Loading "Verificando conexoes TCP ativas" 2
   Get-NetTCPConnection
+  Write-Host ""
   Show-Status "Verificacao concluida" "OK"
   Wait-Return
 }
 
 function Scan-NetworkHosts {
+
     Show-Section "SCANNER DE HOSTS"
-    $base = Read-Host "Digite a rede base (Ex: 192.168.0)"
-    Show-Status "Escaneando hosts da rede..." "WARNING"
-    Start-Sleep -Milliseconds 700
+
+    $localIP = (Get-NetIPAddress -AddressFamily IPv4 |
+        Where-Object {
+            $_.IPAddress -notlike "127.*" -and
+            $_.IPAddress -notlike "169.254.*" -and
+            $_.PrefixOrigin -ne "WellKnown"
+        } |
+        Select-Object -First 1 -ExpandProperty IPAddress)
+
+    $base = ($localIP -split "\.")[0..2] -join "."
+
+    Show-Status "Rede detectada automaticamente: $base.0/24" "OK"
+    Show-Status "Escaneando hosts de $base.1 ate $base.20" "WARNING"
+
     for ($i = 1; $i -le 20; $i++) {
-        $ip = "$base.$i"
-        if (Test-Connection -ComputerName $ip -Count 1 -Quiet) {
+
+          $ip = "$base.$i"
+          $percent = [int](($i / 20) * 100)
+
+          Write-Host "[SCAN] " -NoNewline -ForegroundColor Yellow
+          Write-Host "$ip " -NoNewline -ForegroundColor White
+          Write-Host "($percent%)" -ForegroundColor DarkGray
+
+          $ping = Test-Connection -ComputerName $ip -Count 1 -ErrorAction SilentlyContinue
+
+        if ($ping) {
+
             try {
-              $hostname = [System.Net.Dns]::GetHostByAddress($ip).HostName 
+                $hostname = [System.Net.Dns]::GetHostByAddress($ip).HostName
             }
-        catch {
-          $hostname = "Unknownn"
+            catch {
+                $hostname = "Unknown"
+            }
+
+            $time = $ping.ResponseTime
+
+            Write-Host "[ONLINE]  " -NoNewline -ForegroundColor Green
+            Write-Host "$ip " -NoNewline -ForegroundColor White
+            Write-Host "| $hostname " -NoNewline -ForegroundColor DarkGray
+            Write-Host "| ${time}ms" -ForegroundColor Cyan
         }
-        
-        Write-Host "[ONLINE] " -NoNewLine -ForegroundColor Green
-        Write-Host "$ip " -NoNewLine -ForegroundColor White
-        Write-Host "| $hostname" -ForegroundColor DarkGray
-        } else {
-        Write-Host "[OFFLINE] " -NoNewLine -ForegroundColor DarkGray
-        Write-Host "$ip" -ForegroundColor DarkGray
+        else {
+            Write-Host "[OFFLINE] " -NoNewline -ForegroundColor DarkGray
+            Write-Host "$ip" -ForegroundColor DarkGray
         }
     }
+
     Show-Status "Escaneamento finalizado" "OK"
     Wait-Return
 }
@@ -110,8 +161,9 @@ function Scan-NetworkHosts {
 function Info-DNS { 
   Show-Section "CONSULTA DNS"
   $domain = Read-Host "Digite o dominio. Ex: google.com"
-  Show-Status "Consultando DNS para $domain..." "INFO"
+  Show-Loading "Consultando DNS para $domain" 2
   nslookup $domain
+  Write-Host ""
   Show-Status "Consulta DNS finalizada" "OK"
   Wait-Return
 }
@@ -120,17 +172,18 @@ function Info-DNS {
         Show-Section "AUDITORIA COMPLETA"
 
         Show-Section "IP LOCAL"
-        Show-Status "Coletando informacoes de IP local..." "INFO"
+        Show-Loading "Coletando informacoes de IP local" 2
         ipconfig
 
         Show-Section "PORTAS E CONEXOES"
-        Show-Status "Coletando portas e conexoes..." "INFO"
+        Show-Loading "Coletando portas e conexoes" 2
         netstat -an
 
         Show-Section "CONSULTA DNS"
         $domain = Read-Host "Digite um dominio para consulta DNS"
         nslookup $domain
 
+        Write-Host ""
         Show-Status "Auditoria completa finalizada" "OK"
         Wait-Return
   } 
@@ -146,7 +199,7 @@ function Export-AuditReport {
     $file = "$folder\network-audit-report.txt"
 
     Write-Host ""
-    Write-Host "[*] Gerando relatorio..." -ForegroundColor Yellow
+    Show-Loading "[*] Gerando relatorio" 2
 
     $content = @()
 
@@ -173,7 +226,7 @@ function Export-AuditReport {
 
 function InfoTool {
   Show-Section "INFO TOOL"
-  Show-Status "Carregando as informacoes da Tool"
+  Show-Loading "Carregando as informacoes da Tool" 2
   Write-Host "Network Audit Tool v1.0"
   Write-Host "Developed by rangelsys"
   Wait-Return
@@ -191,15 +244,56 @@ function Export-HtmlReport {
 
     $file = "$folder\network-audit-report.html"
 
-    Show-Status "Gerando relatorio HTML..." "INFO"
+    Show-Loading "Gerando relatorio HTML" 2
 
     $date = Get-Date
     $computer = $env:COMPUTERNAME
     $user = $env:USERNAME
+    $os = Get-CimInstance Win32_OperatingSystem
+    $cpu = Get-CimInstance Win32_Processor
+    $ramGB = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)
 
     $ipInfo = ipconfig | Out-String
     $ports = netstat -an | findstr LISTENING | Out-String
     $connections = Get-NetTCPConnection | Out-String
+
+    $sensitivePorts = @{
+    21   = "FTP"
+    22   = "SSH"
+    23   = "Telnet"
+    80   = "HTTP"
+    135  = "RPC"
+    139  = "NetBIOS"
+    443  = "HTTPS"
+    445  = "SMB"
+    3306 = "MySQL"
+    3389 = "RDP"
+    5432 = "PostgreSQL"
+    5900 = "VNC"
+}
+
+$listeningPorts = Get-NetTCPConnection -State Listen |
+    Select-Object -ExpandProperty LocalPort -Unique
+
+$sensitiveHtml = ""
+
+foreach ($port in $sensitivePorts.Keys) {
+    if ($listeningPorts -contains $port) {
+        $service = $sensitivePorts[$port]
+
+        $level = "warning"
+
+        if ($port -eq 23 -or $port -eq 3389 -or $port -eq 5900) {
+            $level = "danger"
+        }
+
+        $sensitiveHtml += "<span class='badge $level'>Porta $port - $service</span>"
+    }
+}
+
+if ($sensitiveHtml -eq "") {
+    $sensitiveHtml = "<span class='badge ok'>Nenhuma porta sensivel detectada</span>"
+}
 
     $html = @"
 <!DOCTYPE html>
@@ -207,59 +301,158 @@ function Export-HtmlReport {
 <head>
     <meta charset="UTF-8">
     <title>Network Audit Report</title>
-    <style>
-        body {
-            background-color: #0d1117;
-            color: #c9d1d9;
-            font-family: Consolas, monospace;
-            margin: 40px;
-        }
+<style>
+    body {
+        background: #0d1117;
+        color: #c9d1d9;
+        font-family: Consolas, monospace;
+        margin: 0;
+        padding: 40px;
+    }
 
-        h1 {
-            color: #58a6ff;
-        }
+    .container {
+        max-width: 1100px;
+        margin: auto;
+    }
 
-        h2 {
-            color: #79c0ff;
-            border-bottom: 1px solid #30363d;
-            padding-bottom: 6px;
-        }
+    .header {
+        background: linear-gradient(135deg, #161b22, #0d1117);
+        border: 1px solid #30363d;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 25px;
+    }
 
-        .info {
-            background-color: #161b22;
-            border: 1px solid #30363d;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-        }
+    h1 {
+        color: #58a6ff;
+        margin: 0;
+    }
 
-        pre {
-            background-color: #161b22;
-            border: 1px solid #30363d;
-            padding: 15px;
-            border-radius: 8px;
-            overflow-x: auto;
-            white-space: pre-wrap;
-        }
+    .subtitle {
+        color: #8b949e;
+        margin-top: 8px;
+    }
 
-        .ok {
-            color: #3fb950;
-        }
-    </style>
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .card {
+        background: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 10px;
+        padding: 15px;
+    }
+
+    .label {
+        color: #8b949e;
+        font-size: 13px;
+    }
+
+    .value {
+        color: #f0f6fc;
+        font-size: 16px;
+        margin-top: 5px;
+    }
+
+    h2 {
+        color: #79c0ff;
+        border-bottom: 1px solid #30363d;
+        padding-bottom: 6px;
+    }
+
+    pre {
+        background: #161b22;
+        border: 1px solid #30363d;
+        padding: 15px;
+        border-radius: 10px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+    }
+
+    .ok {
+        color: #3fb950;
+    }
+
+    .badge {
+    display: inline-block;
+    padding: 8px 12px;
+    margin: 5px;
+    border-radius: 999px;
+    font-weight: bold;
+    font-size: 13px;
+}
+
+.badge.ok {
+    background: #12391f;
+    color: #3fb950;
+    border: 1px solid #238636;
+}
+
+.badge.warning {
+    background: #3d2f00;
+    color: #f2cc60;
+    border: 1px solid #d29922;
+}
+
+.badge.danger {
+    background: #3d1117;
+    color: #ff7b72;
+    border: 1px solid #f85149;
+}
+
+</style>
 </head>
 <body>
+<div class="container">
 
-    <h1>Network Audit Report</h1>
+    <div class="header">
+        <h1>Network Audit Report</h1>
+        <div class="subtitle">Infrastructure / Security / Audit</div>
+    </div>
 
-    <div class="info">
-        <p><strong>Computador:</strong> $computer</p>
-        <p><strong>Usuario:</strong> $user</p>
-        <p><strong>Data:</strong> $date</p>
-        <p class="ok"><strong>Status:</strong> Relatorio gerado com sucesso</p>
+    <div class="grid">
+        <div class="card">
+            <div class="label">Computador</div>
+            <div class="value">$computer</div>
+        </div>
+
+        <div class="card">
+            <div class="label">Usuario</div>
+            <div class="value">$user</div>
+        </div>
+
+        <div class="card">
+            <div class="label">Sistema</div>
+            <div class="value">$($os.Caption)</div>
+        </div>
+
+        <div class="card">
+            <div class="label">Arquitetura</div>
+            <div class="value">$($os.OSArchitecture)</div>
+        </div>
+
+        <div class="card">
+            <div class="label">Processador</div>
+            <div class="value">$($cpu.Name)</div>
+        </div>
+
+        <div class="card">
+            <div class="label">RAM</div>
+            <div class="value">$ramGB GB</div>
+        </div>
     </div>
 
     <h2>Informacoes de IP</h2>
     <pre>$ipInfo</pre>
+
+    <h2>Portas Sensiveis Detectadas</h2>
+    <div class="card">
+      $sensitiveHtml
+    </div>
 
     <h2>Portas Abertas</h2>
     <pre>$ports</pre>
@@ -267,6 +460,7 @@ function Export-HtmlReport {
     <h2>Conexoes TCP</h2>
     <pre>$connections</pre>
 
+</div>
 </body>
 </html>
 "@
@@ -281,18 +475,44 @@ function Export-HtmlReport {
     Wait-Return
 }
 
-function Show-Banner {
+function System-Info {
+    Show-Section "INFORMACOES DO SISTEMA"
 
+    Show-Loading "Coletando informacoes do sistema" 2
+
+    $os = Get-CimInstance Win32_OperatingSystem
+    $cpu = Get-CimInstance Win32_Processor
+    $ramGB = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)
+    Write-Host ""
+    Write-Host "Computador: $env:COMPUTERNAME" -ForegroundColor White
+    Write-Host "Usuario: $env:USERNAME" -ForegroundColor White
+    Write-Host "Sistema: $($os.Caption)" -ForegroundColor White
+    Write-Host "Versao: $($os.Version)" -ForegroundColor White
+    Write-Host "Arquitetura: $($os.OSArchitecture)" -ForegroundColor White
+    Write-Host "Processador: $($cpu.Name)" -ForegroundColor White
+    Write-Host "Memoria RAM: $ramGB GB" -ForegroundColor White
+
+    Write-Host ""
+    Show-Status "Consulta finalizada" "OK"
+    Wait-Return
+}
+
+function Show-AnimatedBanner {
     Clear-Host
 
-    Write-Host ""
-    Write-Host "=========================================" -ForegroundColor Cyan
-    Write-Host "          NETWORK AUDIT TOOL             " -ForegroundColor Cyan
-    Write-Host "=========================================" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "   Infrastructure | Security | Audit" -ForegroundColor DarkGray
-    Write-Host ""
-    Write-Host "-----------------------------------------" -ForegroundColor DarkGray
+    $lines = @(
+        "=========================================",
+        "          NETWORK AUDIT TOOL",
+        "=========================================",
+        "  Infrastructure | Security | Audit",
+        "========================================="
+    )
+
+    foreach ($line in $lines) {
+        Write-Host $line -ForegroundColor Cyan
+        Start-Sleep -Milliseconds 120
+    }
+
     Write-Host ""
 }
 
@@ -308,6 +528,7 @@ function Show-Menu {
     Menu-Option "8" "Exportar auditoria para TXT" "Yellow"
     Menu-Option "9" "Sobre a Ferramenta" "Magenta"
     Menu-Option "10" "Exportar relatorio HTML" "Magenta"
+    Menu-Option "11" "Informacoes do Sistema" "Magenta"
 
     Write-Host ""
 
@@ -317,7 +538,7 @@ function Show-Menu {
 }
 
 do {
-    Show-Banner
+    Show-AnimatedBanner
     Show-Menu
 
     $opcao = Read-Host "Escolha uma opcao"
@@ -333,6 +554,7 @@ do {
         8 { Export-AuditReport }
         9 { InfoTool }
         10 {Export-HtmlReport}
+        11 {System-Info}
         0 { Write-Host "Encerrando..." -ForegroundColor Yellow }
         default {
             Write-Host "[ERRO] Opcao invalida." -ForegroundColor Red
