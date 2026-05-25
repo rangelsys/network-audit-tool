@@ -227,7 +227,7 @@ function Export-AuditReport {
 function InfoTool {
   Show-Section "INFO TOOL"
   Show-Loading "Carregando as informacoes da Tool" 2
-  Write-Host "Network Audit Tool v1.0"
+  Write-Host "Network Audit Tool v1.1"
   Write-Host "Developed by rangelsys"
   Wait-Return
 }
