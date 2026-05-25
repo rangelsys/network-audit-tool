@@ -8,7 +8,7 @@ function Show-IP {
 }
 
 function Test-ConnectionTarget {
-  $target = Read-Host "Digite o IP ou Domínio"
+  $target = Read-Host "Digite o IP ou Dominio"
   ping $target
   Write-Host""
   Pause
@@ -30,22 +30,31 @@ function Active-Connections {
 }
 
 function Scan-NetworkHosts {
-  $base = Read-host "Digite a rede base. Ex: 192.168.0"
 
-  Write-Host "Escaneando hosts ativos em $base.1 até $base.254..." -ForegroundColor Yellow
+    $base = Read-Host "Digite a rede base (Ex: 192.168.0)"
 
-  for ($i =1; $i -le 254; $i++){
-    $ip = "$base.$i"
+    Write-Host ""
+    Write-Host "Escaneando hosts da rede..." -ForegroundColor Yellow
+    Write-Host ""
 
-    if (Test-Connection -ComputerName $ip -Count 1 -Quiet){
-      Write-Host "[ONLINE] $ip" -ForegroundColor Green
-    } else {
-      Write-Host "[OFFLINE] $ip" -ForegroundColor DarkGray
+    for ($i = 1; $i -le 20; $i++) {
+
+        $ip = "$base.$i";
+
+        if (Test-Connection -ComputerName $ip -Count 1 -Quiet) {
+
+            Write-Host "[ONLINE]  $ip" -ForegroundColor Green
+        }
+
+        else {
+
+            Write-Host "[OFFLINE] $ip" -ForegroundColor DarkGray
+        }
     }
-  }
-  Write-Host""
-  Pause
-  Clear-Host
+
+    Write-Host ""
+    Pause
+    Clear-Host
 }
 
 function Info-DNS { 

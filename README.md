@@ -69,3 +69,9 @@ As capturas de tela e evidências do projeto podem ser encontradas na pasta `/sc
 ## Observação
 
 Ferramenta desenvolvida exclusivamente para fins educacionais e estudos relacionados à auditoria e análise de rede.
+
+## Capturas de Tela
+
+![MENU](screenshots/main-menu.png)
+![HOST SCAN](screenshots/host-scan.png)
+![PING TEST](screenshots/ping-test.png)
